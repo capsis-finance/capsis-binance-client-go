@@ -824,3 +824,46 @@ func (c *WebsocketStreamClient) WsCombinedBookTickerServe(symbols []string, hand
 	}
 	return wsServe(cfg, wsHandler, errHandler)
 }
+
+// WsAllMarketRollingWindowTickersStatHandler handle websocket that push all markets statistics for 24hr for specific window size
+type WsAllMarketRollingWindowTickersStatHandler func(event WsAllMarketRollingWindowTickersStatEvent)
+
+// WsAllMarketRollingWindowTickersStatServe serve websocket that push 24hr statistics for all market every second
+func (c *WebsocketStreamClient) WsAllMarketRollingWindowTickersStatServe(window string, handler WsAllMarketRollingWindowTickersStatHandler, errHandler ErrHandler) (doneCh, stopCh chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/!ticker_%s@arr", c.Endpoint, window)
+	cfg := newWsConfig(endpoint)
+	wsHandler := func(message []byte) {
+		var event WsAllMarketRollingWindowTickersStatEvent
+		err := json.Unmarshal(message, &event)
+		if err != nil {
+			errHandler(err)
+			return
+		}
+		handler(event)
+	}
+	return wsServe(cfg, wsHandler, errHandler)
+}
+
+// WsAllMarketRollingWindowTickersStatEvent define array of websocket market statistics events
+type WsAllMarketRollingWindowTickersStatEvent []*WsMarketRollingWindowTickerStatEvent
+
+// WsMarketRollingWindowTickerStatEvent define websocket market statistics event
+type WsMarketRollingWindowTickerStatEvent struct {
+	Event              string `json:"e"`
+	Time               int64  `json:"E"`
+	Symbol             string `json:"s"`
+	PriceChange        string `json:"p"`
+	PriceChangePercent string `json:"P"`
+	OpenPrice          string `json:"o"`
+	HighPrice          string `json:"h"`
+	LowPrice           string `json:"l"`
+	LastPrice          string `json:"c"`
+	WeightedAvgPrice   string `json:"w"`
+	BaseVolume         string `json:"v"`
+	QuoteVolume        string `json:"q"`
+	OpenTime           int64  `json:"O"`
+	CloseTime          int64  `json:"C"`
+	FirstID            int64  `json:"F"`
+	LastID             int64  `json:"L"`
+	Count              int64  `json:"n"`
+}
